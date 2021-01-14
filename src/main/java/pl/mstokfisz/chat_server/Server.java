@@ -46,6 +46,7 @@ import java.util.Collections;
         xmlRpcServer.setHandlerMapping(propHandlerMapping);
         XmlRpcServerConfigImpl serverConfig = (XmlRpcServerConfigImpl) xmlRpcServer.getConfig();
         serverConfig.setEnabledForExtensions(true);
+        serverConfig.setEnabledForExceptions(true);
         xmlRpcServer.setConfig(serverConfig);
         webServer.start();
         System.out.println("Server XML-RPC started on port: " + xmlPort);

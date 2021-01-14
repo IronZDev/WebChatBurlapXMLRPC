@@ -1,14 +1,11 @@
 package pl.mstokfisz.chat_client;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
-import javafx.scene.Parent;
 import javafx.scene.control.*;
-import javafx.stage.WindowEvent;
+import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
-import org.apache.xmlrpc.client.XmlRpcClientException;
 import pl.mstokfisz.chat_api.*;
 
 import java.net.InetAddress;
@@ -21,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ChatClientController {
+    @FXML
+    public ToggleGroup connectionTypeGroup;
     @FXML
     private Button connectBtn;
     @FXML
@@ -78,14 +77,17 @@ public class ChatClientController {
     @FXML
     private void sendMessage(Event e) {
         try {
-            Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date()};
-            String response = (String) xmlRpcClient.execute("ChatService.sendMessage", params);
-            System.out.println("Message : " + response);
-//            service.sendMessage(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date());
+            if (((RadioButton) connectionTypeGroup.getSelectedToggle()).getText().equals("Burlap")) {
+                service.sendMessage(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date());
+            } else {
+                Object[] params = new Object[]{usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date()};
+                String response = (String) xmlRpcClient.execute("ChatService.sendMessage", params);
+                System.out.println("Message : " + response);
+            }
             sendTextFlield.setText("");
         } catch (Exception ex) {
             a.setTitle("Could not send message!");
-            a.setContentText(ex.getMessage());
+            a.setContentText(getRootException(ex).getMessage());
             a.show();
         }
     }
@@ -95,9 +97,13 @@ public class ChatClientController {
         if (!connected) {
             try {
                 String IP = InetAddress.getLocalHost().getHostAddress();
-                Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP};
-                ChatRoom chatRoom = (ChatRoom) xmlRpcClient.execute("ChatService.connectUser", params);
-//                ChatRoom chatRoom = service.connectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP);
+                ChatRoom chatRoom;
+                if (((RadioButton) connectionTypeGroup.getSelectedToggle()).getText().equals("Burlap")) {
+                    chatRoom = service.connectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP);
+                } else {
+                    Object[] params = new Object[]{usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP};
+                    chatRoom = (ChatRoom) xmlRpcClient.execute("ChatService.connectUser", params);
+                }
                 System.out.println(chatRoom.getUsersList());
                 usernameTextField.setDisable(true);
                 chooseRoomCB.setDisable(true);
@@ -106,7 +112,7 @@ public class ChatClientController {
                 updaterThread = new UpdaterThread();
                 updaterThread.start();
                 checkValidity();
-            } catch (XmlRpcClientException chatException) {
+            } catch (ChatException|XmlRpcException chatException) {
                 usernameTextField.setDisable(false);
                 chooseRoomCB.setDisable(false);
                 connectBtn.setText("Connect!");
@@ -114,18 +120,22 @@ public class ChatClientController {
                 checkValidity();
                 cleanUp();
                 a.setTitle("Could not connect to the room!");
-                a.setContentText(chatException.getMessage());
+                a.setContentText(getRootException(chatException).getMessage());
                 a.show();
             } catch (Exception ex) {
-                a.setContentText(ex.getMessage());
+                ex.printStackTrace();
+                a.setContentText(getRootException(ex).getMessage());
                 a.show();
             }
         } else {
             try {
                 updaterThread.stop();
-                Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex()};
-                String response = (String) xmlRpcClient.execute("ChatService.disconnectUser", params);
-//                service.disconnectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex());
+                if (((RadioButton) connectionTypeGroup.getSelectedToggle()).getText().equals("Burlap")) {
+                    service.disconnectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex());
+                } else {
+                    Object[] params = new Object[]{usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex()};
+                    String response = (String) xmlRpcClient.execute("ChatService.disconnectUser", params);
+                }
                 usernameTextField.setDisable(false);
                 chooseRoomCB.setDisable(false);
                 connectBtn.setDisable(false);
@@ -136,7 +146,7 @@ public class ChatClientController {
             } catch (Exception ex) {
                 cleanUp();
                 a.setTitle("Could not disconnect from the room!");
-                a.setContentText(ex.getMessage());
+                a.setContentText(getRootException(ex).getMessage());
                 a.show();
             }
         }
@@ -149,7 +159,7 @@ public class ChatClientController {
             try {
                 service.disconnectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex());
             } catch (Exception ex) {
-                System.out.println("Error disconnecting from server: "+ex.getMessage());
+                System.out.println("Error disconnecting from server: "+getRootException(ex).getMessage());
             }
         }
         Platform.exit();
@@ -161,6 +171,14 @@ public class ChatClientController {
         if (!connected) {
             sendBtn.setDisable(true);
         }
+    }
+
+    public static Throwable getRootException(Throwable exception){
+        Throwable rootException=exception;
+        while(rootException.getCause()!=null){
+            rootException = rootException.getCause();
+        }
+        return rootException;
     }
 
     private void cleanUp() {
@@ -208,12 +226,15 @@ public class ChatClientController {
             while(connected) {
                 try {
                     Object[] params = new Object[] {chooseRoomCB.getSelectionModel().getSelectedIndex()};
-                    ArrayList<User> userList = new ArrayList<>((List<User>) (Object)Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getUserList", params)));
-                    ArrayList<Message> messageList = new ArrayList<>((List<Message>) (Object)Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getMessageList", params)));
-//                    ArrayList<User> userList = (User[]) xmlRpcClientThread.execute("ChatService.getUserList", params);
-//                    ArrayList<Message> messageList = (Message[]) xmlRpcClientThread.execute("ChatService.getMessageList", params);
-//                    ArrayList<User> userList = service.getUserList(chooseRoomCB.getSelectionModel().getSelectedIndex());
-//                    ArrayList<Message> messageList = service.getMessageList(chooseRoomCB.getSelectionModel().getSelectedIndex());
+                    ArrayList<User> userList;
+                    ArrayList<Message> messageList;
+                    if (((RadioButton) connectionTypeGroup.getSelectedToggle()).getText().equals("Burlap")) {
+                        userList = new ArrayList<>((List<User>) (Object) Arrays.asList(service.getUserList(chooseRoomCB.getSelectionModel().getSelectedIndex())));
+                        messageList = new ArrayList<>((List<Message>) (Object) Arrays.asList(service.getMessageList(chooseRoomCB.getSelectionModel().getSelectedIndex())));
+                    } else {
+                        userList = new ArrayList<>((List<User>) (Object) Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getUserList", params)));
+                        messageList = new ArrayList<>((List<Message>) (Object) Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getMessageList", params)));
+                    }
                     if (lastUserList == null || !compareUserLists(userList)) {
                         updateUserList(userList);
                         lastUserList = userList;
@@ -229,11 +250,10 @@ public class ChatClientController {
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             a.setTitle("Could not download data from the server");
-                            a.setContentText(e.getMessage());
+                            a.setContentText(getRootException(e).getMessage());
                             a.show();
                         }
                     });
-
                 }
             }
         }

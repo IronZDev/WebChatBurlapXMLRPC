@@ -50,6 +50,7 @@ public class BurlapClient extends Application implements EmbeddedServletContaine
             XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
             config.setServerURL(new URL("http://localhost:8033/xmlrpc/chat"));
             config.setEnabledForExtensions(true);
+            config.setEnabledForExceptions(true);
             xmlRpcClient = new XmlRpcClient();
             xmlRpcClient.setConfig(config);
 //            Object[] params = new Object[] {"Maciek", 0, InetAddress.getLocalHost().getHostAddress()};
