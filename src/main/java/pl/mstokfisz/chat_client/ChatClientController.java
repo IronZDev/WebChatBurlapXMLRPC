@@ -103,7 +103,7 @@ public class ChatClientController {
                 chooseRoomCB.setDisable(true);
                 connectBtn.setText("Disconnect!");
                 connected = true;
-                updaterThread = new UpdaterThread(xmlRpcClient);
+                updaterThread = new UpdaterThread();
                 updaterThread.start();
                 checkValidity();
             } catch (XmlRpcClientException chatException) {
@@ -183,13 +183,8 @@ public class ChatClientController {
     }
 
     public class UpdaterThread extends Thread {
-        private XmlRpcClient xmlRpcClientThread;
         private ArrayList<User> lastUserList = null;
         private ArrayList<Message> lastMessageList = null;
-
-        public UpdaterThread(XmlRpcClient xmlRpcClient) {
-            this.xmlRpcClientThread = xmlRpcClient;
-        }
 
         private boolean compareUserLists(ArrayList<User> list) {
             if (lastUserList.size() != list.size()) {
@@ -213,8 +208,8 @@ public class ChatClientController {
             while(connected) {
                 try {
                     Object[] params = new Object[] {chooseRoomCB.getSelectionModel().getSelectedIndex()};
-                    ArrayList<User> userList = new ArrayList<>((List<User>) (Object)Arrays.asList((Object[]) xmlRpcClientThread.execute("ChatService.getUserList", params)));
-                    ArrayList<Message> messageList = new ArrayList<>((List<Message>) (Object)Arrays.asList((Object[]) xmlRpcClientThread.execute("ChatService.getMessageList", params)));
+                    ArrayList<User> userList = new ArrayList<>((List<User>) (Object)Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getUserList", params)));
+                    ArrayList<Message> messageList = new ArrayList<>((List<Message>) (Object)Arrays.asList((Object[]) xmlRpcClient.execute("ChatService.getMessageList", params)));
 //                    ArrayList<User> userList = (User[]) xmlRpcClientThread.execute("ChatService.getUserList", params);
 //                    ArrayList<Message> messageList = (Message[]) xmlRpcClientThread.execute("ChatService.getMessageList", params);
 //                    ArrayList<User> userList = service.getUserList(chooseRoomCB.getSelectionModel().getSelectedIndex());
