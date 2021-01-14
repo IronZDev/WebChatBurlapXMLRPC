@@ -52,9 +52,9 @@ public class BurlapClient extends Application implements EmbeddedServletContaine
             config.setEnabledForExtensions(true);
             xmlRpcClient = new XmlRpcClient();
             xmlRpcClient.setConfig(config);
-            Object[] params = new Object[] {"Maciek", 0, InetAddress.getLocalHost().getHostAddress()};
-            ChatRoom response = (ChatRoom) xmlRpcClient.execute("XmlRpcHandler.connectUser", params);
-            System.out.println("Message : " + response);
+//            Object[] params = new Object[] {"Maciek", 0, InetAddress.getLocalHost().getHostAddress()};
+//            ChatRoom response = (ChatRoom) xmlRpcClient.execute("XmlRpcHandler.connectUser", params);
+//            System.out.println("Message : " + response);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -74,7 +74,7 @@ public class BurlapClient extends Application implements EmbeddedServletContaine
         Parent root = fxmlLoader.load();
 
         ChatClientController controller = fxmlLoader.getController();
-        controller.setService(service);
+        controller.setService(service, xmlRpcClient);
 
         Scene scene = new Scene(root, 1240, 720);
 

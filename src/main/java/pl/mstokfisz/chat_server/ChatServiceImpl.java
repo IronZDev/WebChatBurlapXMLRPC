@@ -3,13 +3,15 @@ package pl.mstokfisz.chat_server;
 import pl.mstokfisz.chat_api.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class ChatServiceImpl implements ChatService {
-    private static Chat chat;
-    public ChatServiceImpl(Chat chat) {
-        ChatServiceImpl.chat = chat;
-    }
+    private static final Chat chat = new Chat();
+//    public ChatServiceImpl(Chat chat) {
+//        ChatServiceImpl.chat = chat;
+//    }
 
     @Override
     public ChatRoom connectUser(String userName, int roomNum, String IP) throws ChatException {
@@ -20,26 +22,28 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void disconnectUser(String userName, int roomNum) throws ChatException {
+    public String disconnectUser(String userName, int roomNum) throws ChatException {
         ChatRoom room = chat.getRoom(roomNum);
         room.disconnectUser(userName);
+        return userName;
     }
 
     @Override
-    public ArrayList<User> getUserList(int roomNum) throws ChatException {
+    public Object[] getUserList(int roomNum) throws ChatException {
         ChatRoom room = chat.getRoom(roomNum);
-        return room.getUsersList();
+        return room.getUsersList().toArray();
     }
 
     @Override
-    public ArrayList<Message> getMessageList(int roomNum) throws ChatException {
+    public Object[] getMessageList(int roomNum) throws ChatException {
         ChatRoom room = chat.getRoom(roomNum);
-        return room.getSentMessages();
+        return room.getSentMessages().toArray();
     }
 
     @Override
-    public void sendMessage(String userName, int roomNum, String message, Date timestamp) throws ChatException {
+    public String sendMessage(String userName, int roomNum, String message, Date timestamp) throws ChatException {
         ChatRoom room = chat.getRoom(roomNum);
         room.sendMessage(userName, message, timestamp);
+        return message;
     }
 }

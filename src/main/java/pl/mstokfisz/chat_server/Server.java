@@ -26,7 +26,7 @@ import java.util.Collections;
 
     @Bean
     ChatService chatService() {
-        return new ChatServiceImpl(chat);
+        return new ChatServiceImpl();
     }
 
     @Bean(name = "/chat") RemoteExporter burlapService() {
@@ -37,8 +37,8 @@ import java.util.Collections;
     }
 
     public static void main(String[] args) throws IOException, XmlRpcException {
-        XmlRpcHandler xmlRpcHandler = new XmlRpcHandler();
-        xmlRpcHandler.setChat(chat);
+//        XmlRpcHandler xmlRpcHandler = new XmlRpcHandler();
+//        xmlRpcHandler.setChat(chat);
         WebServer webServer = new WebServer(xmlPort);
         XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
         PropertyHandlerMapping propHandlerMapping = new PropertyHandlerMapping();

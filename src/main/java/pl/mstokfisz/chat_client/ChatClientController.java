@@ -7,6 +7,8 @@ import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.stage.WindowEvent;
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.apache.xmlrpc.client.XmlRpcClientException;
 import pl.mstokfisz.chat_api.*;
 
 import java.net.InetAddress;
@@ -35,6 +37,7 @@ public class ChatClientController {
     private TextField sendTextFlield;
 
     private ChatService service;
+    private XmlRpcClient xmlRpcClient;
     private boolean usernameValid = false;
     private boolean roomValid = false;
     private boolean connected = false;
@@ -42,8 +45,9 @@ public class ChatClientController {
 
     Alert a = new Alert(Alert.AlertType.ERROR);
 
-    public void setService(ChatService service) {
+    public void setService(ChatService service, XmlRpcClient xmlRpcClient) {
         this.service = service;
+        this.xmlRpcClient = xmlRpcClient;
     }
 
     @FXML
@@ -74,7 +78,10 @@ public class ChatClientController {
     @FXML
     private void sendMessage(Event e) {
         try {
-            service.sendMessage(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date());
+            Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date()};
+            String response = (String) xmlRpcClient.execute("ChatService.sendMessage", params);
+            System.out.println("Message : " + response);
+//            service.sendMessage(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), sendTextFlield.getText(), new Date());
             sendTextFlield.setText("");
         } catch (Exception ex) {
             a.setTitle("Could not send message!");
@@ -88,16 +95,18 @@ public class ChatClientController {
         if (!connected) {
             try {
                 String IP = InetAddress.getLocalHost().getHostAddress();
-                ChatRoom chatRoom = service.connectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP);
+                Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP};
+                ChatRoom chatRoom = (ChatRoom) xmlRpcClient.execute("ChatService.connectUser", params);
+//                ChatRoom chatRoom = service.connectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex(), IP);
                 System.out.println(chatRoom.getUsersList());
                 usernameTextField.setDisable(true);
                 chooseRoomCB.setDisable(true);
                 connectBtn.setText("Disconnect!");
                 connected = true;
-                updaterThread = new UpdaterThread();
+                updaterThread = new UpdaterThread(xmlRpcClient);
                 updaterThread.start();
                 checkValidity();
-            } catch (ChatException chatException) {
+            } catch (XmlRpcClientException chatException) {
                 usernameTextField.setDisable(false);
                 chooseRoomCB.setDisable(false);
                 connectBtn.setText("Connect!");
@@ -114,7 +123,9 @@ public class ChatClientController {
         } else {
             try {
                 updaterThread.stop();
-                service.disconnectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex());
+                Object[] params = new Object[] {usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex()};
+                String response = (String) xmlRpcClient.execute("ChatService.disconnectUser", params);
+//                service.disconnectUser(usernameTextField.getText(), chooseRoomCB.getSelectionModel().getSelectedIndex());
                 usernameTextField.setDisable(false);
                 chooseRoomCB.setDisable(false);
                 connectBtn.setDisable(false);
@@ -172,8 +183,13 @@ public class ChatClientController {
     }
 
     public class UpdaterThread extends Thread {
+        private XmlRpcClient xmlRpcClientThread;
         private ArrayList<User> lastUserList = null;
         private ArrayList<Message> lastMessageList = null;
+
+        public UpdaterThread(XmlRpcClient xmlRpcClient) {
+            this.xmlRpcClientThread = xmlRpcClient;
+        }
 
         private boolean compareUserLists(ArrayList<User> list) {
             if (lastUserList.size() != list.size()) {
@@ -196,8 +212,13 @@ public class ChatClientController {
         public void run(){
             while(connected) {
                 try {
-                    ArrayList<User> userList = service.getUserList(chooseRoomCB.getSelectionModel().getSelectedIndex());
-                    ArrayList<Message> messageList = service.getMessageList(chooseRoomCB.getSelectionModel().getSelectedIndex());
+                    Object[] params = new Object[] {chooseRoomCB.getSelectionModel().getSelectedIndex()};
+                    ArrayList<User> userList = new ArrayList<>((List<User>) (Object)Arrays.asList((Object[]) xmlRpcClientThread.execute("ChatService.getUserList", params)));
+                    ArrayList<Message> messageList = new ArrayList<>((List<Message>) (Object)Arrays.asList((Object[]) xmlRpcClientThread.execute("ChatService.getMessageList", params)));
+//                    ArrayList<User> userList = (User[]) xmlRpcClientThread.execute("ChatService.getUserList", params);
+//                    ArrayList<Message> messageList = (Message[]) xmlRpcClientThread.execute("ChatService.getMessageList", params);
+//                    ArrayList<User> userList = service.getUserList(chooseRoomCB.getSelectionModel().getSelectedIndex());
+//                    ArrayList<Message> messageList = service.getMessageList(chooseRoomCB.getSelectionModel().getSelectedIndex());
                     if (lastUserList == null || !compareUserLists(userList)) {
                         updateUserList(userList);
                         lastUserList = userList;
@@ -209,10 +230,15 @@ public class ChatClientController {
                     TimeUnit.MILLISECONDS.sleep(100);
                 } catch (Exception e) {
                     System.out.println("Problem");
-                    System.out.println(Arrays.toString(e.getStackTrace()));
-                    a.setTitle("Could not download data from the server");
-                    a.setContentText(e.getMessage());
-                    a.show();
+                    e.printStackTrace();
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            a.setTitle("Could not download data from the server");
+                            a.setContentText(e.getMessage());
+                            a.show();
+                        }
+                    });
+
                 }
             }
         }
