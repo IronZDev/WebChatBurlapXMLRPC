@@ -26,6 +26,7 @@ public class ChatRoom implements Serializable {
 
     public void connectUser(String userName, String IP) throws ChatException {
         User user = getUser(userName);
+        System.out.println(user);
         if (user != null) {
             if (user.isOnline()) {
                 System.out.println("User already connected!");// User already connected

@@ -5,12 +5,10 @@ import pl.mstokfisz.chat_api.*;
 import java.util.ArrayList;
 import java.util.Date;
 
-import static java.rmi.server.RemoteServer.getClientHost;
-
 public class ChatServiceImpl implements ChatService {
-    private final Chat chat;
-    public ChatServiceImpl() {
-        chat = new Chat();
+    private static Chat chat;
+    public ChatServiceImpl(Chat chat) {
+        ChatServiceImpl.chat = chat;
     }
 
     @Override
