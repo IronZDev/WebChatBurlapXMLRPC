@@ -2,16 +2,11 @@ package pl.mstokfisz.chat_server;
 
 import pl.mstokfisz.chat_api.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
+
 
 public class ChatServiceImpl implements ChatService {
     private static final Chat chat = new Chat();
-//    public ChatServiceImpl(Chat chat) {
-//        ChatServiceImpl.chat = chat;
-//    }
 
     @Override
     public ChatRoom connectUser(String userName, int roomNum, String IP) throws ChatException {

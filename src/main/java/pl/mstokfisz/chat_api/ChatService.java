@@ -1,8 +1,6 @@
 package pl.mstokfisz.chat_api;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 public interface ChatService {
     ChatRoom connectUser(String userName, int roomNum, String IP) throws ChatException;

@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 
-import static java.lang.String.format;
-
 public class ChatRoom implements Serializable {
     private final String name;
 

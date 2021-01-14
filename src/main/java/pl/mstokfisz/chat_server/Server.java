@@ -37,8 +37,6 @@ import java.util.Collections;
     }
 
     public static void main(String[] args) throws IOException, XmlRpcException {
-//        XmlRpcHandler xmlRpcHandler = new XmlRpcHandler();
-//        xmlRpcHandler.setChat(chat);
         WebServer webServer = new WebServer(xmlPort);
         XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
         PropertyHandlerMapping propHandlerMapping = new PropertyHandlerMapping();

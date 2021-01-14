@@ -15,16 +15,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.remoting.caucho.BurlapProxyFactoryBean;
 import org.springframework.util.SocketUtils;
-import pl.mstokfisz.chat_api.ChatException;
-import pl.mstokfisz.chat_api.ChatRoom;
+
 import pl.mstokfisz.chat_api.ChatService;
 import javafx.application.Application;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.URL;
-
-import static java.lang.System.out;
 
 @ComponentScan
 @EnableAutoConfiguration
@@ -53,9 +49,6 @@ public class BurlapClient extends Application implements EmbeddedServletContaine
             config.setEnabledForExceptions(true);
             xmlRpcClient = new XmlRpcClient();
             xmlRpcClient.setConfig(config);
-//            Object[] params = new Object[] {"Maciek", 0, InetAddress.getLocalHost().getHostAddress()};
-//            ChatRoom response = (ChatRoom) xmlRpcClient.execute("XmlRpcHandler.connectUser", params);
-//            System.out.println("Message : " + response);
         } catch (Exception e) {
             e.printStackTrace();
         }
